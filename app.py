@@ -5,7 +5,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 load_dotenv()
 
-app = App(taken=os.environ.get("SLACK_BOT_TOKEN"))
+app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
 if __name__ == "__main__" :
     SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
