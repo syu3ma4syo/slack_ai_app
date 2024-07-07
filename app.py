@@ -77,7 +77,7 @@ def handle_mention(event, say):
         callbacks=[callback],
     )
 
-    ai_message = llm(message)
+    ai_message = llm(messages)
     history.add_message(ai_message)
 
     # llm.predict(message)
