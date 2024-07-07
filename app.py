@@ -8,7 +8,7 @@ import time
 from typing import Any
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import LLMResult
-from datatime import timedelta
+from datetime import timedelta
 from langchain.memory import MomentoChatMessageHistory
 from langchain.schema import HumanMessage, LLMResult, SystemMessage
 
