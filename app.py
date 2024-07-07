@@ -8,6 +8,9 @@ import time
 from typing import Any
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import LLMResult
+from datatime import timedelta
+from langchain.memory import MomentoChatMessageHistory
+from langchain.schema import HumanMessage, LLMResult, SystemMessage
 
 CHAT_UPDATE_INTERVAL_SEC = 1
 
@@ -47,11 +50,26 @@ def handle_mention(event, say):
     thread_ts = event["ts"]
     message = re.sub("<@.*>","",event["text"])
 
+    id_ts = event["ts"]
+    if "thread_ts" in event:
+        id_ts = event["thread_ts"]
+
     result = say("\n\nTyping...",thread_ts=thread_ts)
     ts = result["ts"]
 
-    callback = SlackStreamingCallbackHandler(channel=channel,ts=ts)
+    history = MomentoChatMessageHistory.from_client_params(
+        id_ts,
+        os.environ["MOMENTO_CACHE"],
+        timedelta(hours=int(os.environ["MOMENTO_TTL"])),
+    )
 
+    message = [SystemMessage(content="You are agood assistant.")]
+    message.extend(history.messages)
+    message.append(HumanMessage(content=message))
+
+    history.add_user_message(message)
+
+    callback = SlackStreamingCallbackHandler(channel=channel,ts=ts)
     llm = ChatOpenAI(
         model_name=os.environ["OPENAI_API_MODEL"],
         temperature=os.environ["OPENAI_TEMPERATURE"],
@@ -59,7 +77,10 @@ def handle_mention(event, say):
         callbacks=[callback],
     )
 
-    llm.predict(message)
+    ai_message = llm(message)
+    history.add_message(ai_message)
+
+    # llm.predict(message)
 
     # response = llm.predict(message)
     # say(thread_ts=thread_ts,text=response)
