@@ -65,7 +65,7 @@ def handle_mention(event, say):
 
     messages = [SystemMessage(content="You are agood assistant.")]
     messages.extend(history.messages)
-    MomentoChatMessageHistory.append(HumanMessage(content=message))
+    messages.append(HumanMessage(content=message))
 
     history.add_user_message(message)
 
