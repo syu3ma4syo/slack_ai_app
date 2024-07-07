@@ -63,9 +63,9 @@ def handle_mention(event, say):
         timedelta(hours=int(os.environ["MOMENTO_TTL"])),
     )
 
-    message = [SystemMessage(content="You are agood assistant.")]
-    message.extend(history.messages)
-    message.append(HumanMessage(content=message))
+    messages = [SystemMessage(content="You are agood assistant.")]
+    messages.extend(history.messages)
+    MomentoChatMessageHistory.append(HumanMessage(content=message))
 
     history.add_user_message(message)
 
