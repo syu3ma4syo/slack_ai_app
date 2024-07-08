@@ -11,10 +11,20 @@ from langchain.schema import LLMResult
 from datetime import timedelta
 from langchain.memory import MomentoChatMessageHistory
 from langchain.schema import HumanMessage, LLMResult, SystemMessage
+import json
+import logging
+from slack_bolt.adapter.aws_lambda import SlackRequestHandler
 
 CHAT_UPDATE_INTERVAL_SEC = 1
 
 load_dotenv()
+
+# ログ
+SlackRequestHandler.clear_all_log_handlers()
+logging.basicConfig(
+    format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 app = App(
     signing_secret=os.environ["SLACK_SIGNING_SECRET"],
@@ -43,8 +53,6 @@ class SlackStreamingCallbackHandler(BaseCallbackHandler):
     def on_llm_end(self, response: LLMResult, **kwargs: Any)->Any:
         app.client.chat_update(channel=self.channel, ts=self.ts, text=self.message)
 
-
-# @app.event("app_mention")
 def handle_mention(event, say):
     channel = event["channel"]
     thread_ts = event["ts"]
@@ -80,11 +88,6 @@ def handle_mention(event, say):
     ai_message = llm(messages)
     history.add_message(ai_message)
 
-    # llm.predict(message)
-
-    # response = llm.predict(message)
-    # say(thread_ts=thread_ts,text=response)
-
 def just_ack(ack):
     ack()
 
@@ -92,3 +95,15 @@ app.event("app_mention")(ack=just_ack, lazy=[handle_mention])
 
 if __name__ == "__main__" :
     SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+
+def handler(event, context):
+    logging.info("handler called")
+    header = event["headers"]
+    logger.info(json.dumps(header))
+
+    if "x-slack-retry-num" in header:
+        logger.info("SKIP > x-slack-retry-num: %s", header["x-slack-retry-num"])
+        return 200
+
+    slack_handler = SlackRequestHandler(app=app)
+    return slack_handler.handle(event, context)
