@@ -111,7 +111,7 @@ def handle_mention(event, say):
     )
 
     qa_chain = RetrievalQA.from_llm(llm=llm, retriever=vectorstore.as_retriever())
-    qa_chain.runn(message)
+    qa_chain.run(message)
 
     # ai_message = llm(messages)
     # history.add_message(ai_message)
