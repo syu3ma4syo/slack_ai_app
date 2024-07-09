@@ -17,18 +17,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def initialize_vectorstore():
-    #pinecone.init(
-    #    api_key=os.environ["PINECONE_API_KEY"],
-    #    environment=os.environ["PINECONE_ENV"],
-    #)
+    pinecone.init(
+        api_key=os.environ["PINECONE_API_KEY"],
+        environment=os.environ["PINECONE_ENV"],
+    )
 
     index_name = os.environ["PINECONE_INDEX"]
     embeddings = OpenAIEmbeddings()
-    pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
-    pc.Index(index_name)
-    pc.embeddings(embeddings)
-
-    return pc
+    return Pinecone.from_existing_index(index_name,embeddings)
 
 if __name__ == "__main__":
     file_path = sys.argv[1]
