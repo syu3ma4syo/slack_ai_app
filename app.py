@@ -15,7 +15,7 @@ import json
 import logging
 from slack_bolt.adapter.aws_lambda import SlackRequestHandler
 from add_document import initialize_vectorstore
-from langchain.chains import retrieval_qa
+from langchain.chains import RetrievalQA 
 
 CHAT_UPDATE_INTERVAL_SEC = 1
 
@@ -110,7 +110,7 @@ def handle_mention(event, say):
         callbacks=[callback],
     )
 
-    qa_chain = retrieval_qa.from_llm(llm=llm, retriever=vectorstore.as_retriever())
+    qa_chain = RetrievalQA.from_llm(llm=llm, retriever=vectorstore.as_retriever())
     qa_chain.runn(message)
 
     # ai_message = llm(messages)
