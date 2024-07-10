@@ -15,7 +15,9 @@ import json
 import logging
 from slack_bolt.adapter.aws_lambda import SlackRequestHandler
 from add_document import initialize_vectorstore
-from langchain.chains import RetrievalQA 
+from langchain.chains import RetrievalQA
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationBufferMemory
 
 CHAT_UPDATE_INTERVAL_SEC = 1
 
@@ -88,13 +90,17 @@ def handle_mention(event, say):
     result = say("\n\nTyping...",thread_ts=thread_ts)
     ts = result["ts"]
 
-    vectorstore = initialize_vectorstore()
+    history = MomentoChatMessageHistory.from_client_params(
+        id_ts,
+        os.environ["MOMENTO_CACHE"],
+        timedelta(hours=int(os.environ["MOMENTO_TTL"])),
+    )
 
-    # history = MomentoChatMessageHistory.from_client_params(
-    #     id_ts,
-    #     os.environ["MOMENTO_CACHE"],
-    #     timedelta(hours=int(os.environ["MOMENTO_TTL"])),
-    # )
+    memory = ConversationBufferMemory(
+        chat_memory=history, memory_key="chat_history", return_messages=True
+    )
+
+    vectorstore = initialize_vectorstore()
 
     # messages = [SystemMessage(content="You are agood assistant.")]
     # messages.extend(history.messages)
@@ -110,7 +116,18 @@ def handle_mention(event, say):
         callbacks=[callback],
     )
 
-    qa_chain = RetrievalQA.from_llm(llm=llm, retriever=vectorstore.as_retriever())
+    condense_question_llm = ChatOpenAI(
+        model_name=os.environ["OPENAI_API_MODEL"],
+        temperature=os.environ["OPENAI_TEMPERATURE"],
+    )
+
+    qa_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm, 
+        retriever=vectorstore.as_retriever(),
+        memory=memory,
+        condense_question_llm=condense_question_llm,
+    )
+
     qa_chain.run(message)
 
     # ai_message = llm(messages)
